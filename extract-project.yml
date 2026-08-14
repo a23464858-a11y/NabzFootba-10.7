@@ -1,0 +1,63 @@
+name: Extract Nabz Football project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check ZIP file
+        shell: bash
+        run: |
+          set -eux
+          echo "Files in repository:"
+          ls -lah
+          echo "ZIP information:"
+          file NabzFootball.zip
+          unzip -t NabzFootball.zip
+
+      - name: Extract project ZIP
+        shell: bash
+        run: |
+          set -eux
+          rm -rf /tmp/nabz-project
+          mkdir -p /tmp/nabz-project
+          unzip -q NabzFootball.zip -d /tmp/nabz-project
+          echo "Extracted files:"
+          find /tmp/nabz-project -maxdepth 3 -type f | head -100
+
+      - name: Extract project files
+        shell: bash
+        run: |
+          set -eux
+          if [ -d "/tmp/nabz-project/NabzFootball" ]; then
+            cp -a /tmp/nabz-project/NabzFootball/. .
+          else
+            echo "ERROR: NabzFootball folder was not found inside ZIP."
+            exit 1
+          fi
+
+      - name: Commit extracted project
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f NabzFootball.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Extract Nabz Football Android project"
+            git push
+          fi
